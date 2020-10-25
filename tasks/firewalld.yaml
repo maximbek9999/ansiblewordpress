@@ -1,0 +1,41 @@
+  - name: Firewalld management
+    when: ansible_hostname == "app" or ansible_hostname == "mysql"
+    yum: 
+      name: firewalld
+      state: latest
+  - name: Start firewalld
+    systemd:
+      name: firewalld
+      state: started
+      enabled: yes
+  - name: add http port 80 to public zone
+    when: ansible_hostname == "app"
+    firewalld:
+      zone: public
+      port: 80/tcp
+      permanent: yes
+      state: enabled
+    register: appfirewalld
+  - name: add mysql port 3306 to public zone - mysql server
+    when: ansible_hostname == "mysql"
+    firewalld:
+      zone: public
+      port: 3306/tcp
+      permanent: yes
+      state: enabled
+    register: mysqlfirewalld
+  - name: add app server to acces mysql server
+    when: ansible_hostname == "mysql"
+    firewalld:
+      zone: public
+      source: "{{ appip }}"
+      state: enabled
+      permanent: yes
+    register: mysqlfirewalldsource
+  - name: reload firewalld
+    when: 
+      - ansible_hostname == "mysql" or ansible_hostname == "app"
+      - appfirewalld.changed or mysqlfirewalld.changed or mysqlfirewalldsource.changed
+    systemd:
+      name: firewalld
+      state: reloaded
