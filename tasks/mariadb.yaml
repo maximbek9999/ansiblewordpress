@@ -1,0 +1,15 @@
+- name: Install  mariadb
+  when: ansible_hostname == "mysql"
+  yum: 
+    name: 
+      - mariadb
+      - mariadb-server
+      - MySQL-python
+    state: latest
+  register: db_installation
+- name: Start and enable Mariadb
+  when: ansible_hostname == "mysql"
+  systemd:
+    state: started
+    enabled: yes
+    name: mariadb
